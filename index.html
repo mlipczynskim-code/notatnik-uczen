@@ -7,8 +7,6 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#F4F2EE">
 <title>Moje zajęcia · Notatnik Trenera</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap">
 <style>
   :root {
     --bg: #F4F2EE; --card: #FFFFFF; --ink: #16181D; --soft: #2A2D33; --muted: #5B5F66;
@@ -16,9 +14,9 @@
     --blue: #1E4F91; --blue-soft: #E3ECF8; --neutral: #EDEAE4; --peach: #F9B48F;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 Barlow, system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; }
   main { max-width: 520px; margin: 0 auto; padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
-  h1 { margin: 0; font: 800 36px/1 'Barlow Condensed', Barlow, sans-serif; }
+  h1 { margin: 0; font: 800 34px/1.05 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; letter-spacing: -0.5px; }
   .muted { color: var(--muted); font-weight: 500; font-size: 15px; margin: 0; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
   .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -31,9 +29,9 @@
   .cls { display: flex; gap: 14px; align-items: center; }
   .date { width: 56px; text-align: center; flex: none; }
   .date small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
-  .date strong { display: block; font: 800 28px/1 'Barlow Condensed', sans-serif; }
+  .date strong { display: block; font: 800 26px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; }
   .title { font-weight: 700; font-size: 17px; }
-  button { font: 700 16px Barlow, sans-serif; min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; }
+  button { font: 700 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; }
   .btn { background: var(--card); color: var(--ink); border: 1px solid #D5CFC4; }
   .btn.primary { background: var(--accent); color: #fff; border: 0; }
   .note { border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 600; }
@@ -51,7 +49,8 @@
   <p class="muted">Ładowanie…</p>
 </main>
 <script>
-  // Strona ucznia bez instalowania aplikacji. Token jest w części adresu po "#", więc nie trafia do logów serwera strony.
+  // Strona ucznia bez instalowania aplikacji. Bez zewnętrznych czcionek, ciasteczek i analityki.
+  // Token jest w części adresu po "#", więc nie trafia do logów serwera strony.
   // Klucz poniżej to publiczny klucz "anon" — dostęp pilnują funkcje w bazie (004_links.sql), które widzą tylko dane z tokenu.
   const SUPABASE_URL = 'https://opnxkasrzuepgbimwndz.supabase.co';
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wbnhrYXNyenVlcGdiaW13bmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzQ1NDIsImV4cCI6MjEwODAxMDU0Mn0.07KQDYvpmzZuPK4aMW9vRZovB0qPYNzJdW2eXExtSpo';
