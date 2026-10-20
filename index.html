@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#F4F2EE">
+<title>Moje zajęcia · Notatnik Trenera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap">
+<style>
+  :root {
+    --bg: #F4F2EE; --card: #FFFFFF; --ink: #16181D; --soft: #2A2D33; --muted: #5B5F66;
+    --border: #E2DDD3; --accent: #C2410C; --accent-dark: #9A3412; --accent-soft: #FBE7DC;
+    --blue: #1E4F91; --blue-soft: #E3ECF8; --neutral: #EDEAE4; --peach: #F9B48F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 Barlow, system-ui, -apple-system, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { margin: 0; font: 800 36px/1 'Barlow Condensed', Barlow, sans-serif; }
+  .muted { color: var(--muted); font-weight: 500; font-size: 15px; margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 5px 10px; border-radius: 8px; font-weight: 700; font-size: 14px; background: var(--neutral); }
+  .badge.pay { background: var(--accent); color: #fff; }
+  .badge.ok { background: var(--blue-soft); color: var(--blue); }
+  .plan { background: var(--ink); color: #fff; border-radius: 16px; padding: 16px; }
+  .plan b { color: var(--peach); font-size: 13px; letter-spacing: .8px; display: block; margin-bottom: 6px; }
+  .info { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 15px; color: var(--soft); }
+  .cls { display: flex; gap: 14px; align-items: center; }
+  .date { width: 56px; text-align: center; flex: none; }
+  .date small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .date strong { display: block; font: 800 28px/1 'Barlow Condensed', sans-serif; }
+  .title { font-weight: 700; font-size: 17px; }
+  button { font: 700 16px Barlow, sans-serif; min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; }
+  .btn { background: var(--card); color: var(--ink); border: 1px solid #D5CFC4; }
+  .btn.primary { background: var(--accent); color: #fff; border: 0; }
+  .note { border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 600; }
+  .note.cancelled { background: var(--blue-soft); color: var(--blue); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .note.locked { background: var(--neutral); color: var(--soft); font-weight: 500; }
+  .note.err { background: var(--accent-soft); color: var(--accent-dark); }
+  .window { color: var(--blue); font-size: 14px; font-weight: 600; flex: 1; }
+  .reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .reasons .ghost { grid-column: 1 / -1; border: 0; background: transparent; color: var(--muted); }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite">
+  <p class="muted">Ładowanie…</p>
+</main>
+<script>
+  // Strona ucznia bez instalowania aplikacji. Token jest w części adresu po "#", więc nie trafia do logów serwera strony.
+  // Klucz poniżej to publiczny klucz "anon" — dostęp pilnują funkcje w bazie (004_links.sql), które widzą tylko dane z tokenu.
+  const SUPABASE_URL = 'https://opnxkasrzuepgbimwndz.supabase.co';
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wbnhrYXNyenVlcGdiaW13bmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzQ1NDIsImV4cCI6MjEwODAxMDU0Mn0.07KQDYvpmzZuPK4aMW9vRZovB0qPYNzJdW2eXExtSpo';
+  const DAYS = ['ND', 'PN', 'WT', 'ŚR', 'CZ', 'PT', 'SO'];
+  const REASONS = ['Choroba', 'Praca / szkoła', 'Wyjazd', 'Inny powód'];
+  const app = document.getElementById('app');
+  const token = (new URLSearchParams(location.hash.slice(1)).get('t') || '').toLowerCase();
+  let openReasons = null;
+
+  function el(tag, attrs, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') node.className = v;
+      else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    }
+    for (const c of children.flat()) if (c !== null && c !== undefined && c !== false) node.append(c);
+    return node;
+  }
+  const pad = (n) => String(n).padStart(2, '0');
+  const time = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  async function rpc(name, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && data.message) || 'Brak połączenia. Spróbuj za chwilę.');
+    return data;
+  }
+
+  // Najbliższe zajęcia: z grafiku i z treningów założonych przez trenera, bez duplikatów (ta sama grupa ±3 h).
+  function upcoming(s, days = 14) {
+    const out = [];
+    const now = Date.now();
+    const add = (group, at, duration) => {
+      if (at.getTime() < now - 2 * 3600e3 || at.getTime() > now + days * 864e5) return;
+      if (out.some((v) => v.group.id === group.id && Math.abs(v.at - at) <= 3 * 3600e3)) return;
+      out.push({ key: `${group.id}-${at.toISOString()}`, group, at, duration });
+    };
+    for (const t of s.upcoming) {
+      const g = s.groups.find((x) => x.id === t.group_id);
+      if (g) add(g, new Date(t.starts_at), t.duration_min);
+    }
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    for (let d = 0; d <= days; d++) {
+      const day = new Date(start);
+      day.setDate(day.getDate() + d);
+      for (const g of s.groups) {
+        for (const slot of g.schedule) {
+          if (slot.weekday !== day.getDay()) continue;
+          const [h, m] = String(slot.time).split(':').map(Number);
+          const at = new Date(day);
+          at.setHours(h || 0, m || 0, 0, 0);
+          add(g, at, slot.duration_min);
+        }
+      }
+    }
+    return out.sort((a, b) => a.at - b.at);
+  }
+
+  function message(text, cls) {
+    app.replaceChildren(el('div', { class: `card` }, el('h1', {}, 'Notatnik Trenera'), el('p', { class: `muted ${cls || ''}` }, text)));
+  }
+
+  async function act(fn) {
+    try {
+      await fn();
+      openReasons = null;
+      await load();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  function render(s) {
+    const classes = upcoming(s);
+    const h = s.cancel_hours;
+    const nodes = [
+      el('div', {}, el('p', { class: 'muted' }, s.coach_name ? `Trener: ${s.coach_name}` : 'Notatnik Trenera'), el('h1', {}, `Cześć, ${s.name.split(' ')[0]}`)),
+      el('div', { class: 'row' },
+        s.balance > 0 ? el('span', { class: 'badge pay' }, `Do zapłaty ${s.balance} zł`) : el('span', { class: 'badge ok' }, 'Opłacone'),
+        s.pass_type === 'entries' ? el('span', { class: 'badge' }, `Karnet: ${s.entries_left} wejść`) : null,
+        s.pass_type === 'monthly' && s.valid_until ? el('span', { class: 'badge' }, `Karnet do ${s.valid_until}`) : null,
+      ),
+      s.plan ? el('div', { class: 'plan' }, el('b', {}, 'PLAN NA NASTĘPNE ZAJĘCIA'), s.plan) : null,
+      el('div', { class: 'info' }, `Zajęcia możesz odwołać najpóźniej ${h} h przed startem. Później trening przepada i może zostać policzony z karnetu.`),
+    ];
+    if (classes.length === 0) nodes.push(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'Brak zaplanowanych zajęć w najbliższych 2 tygodniach.')));
+
+    for (const c of classes) {
+      const cancelled = s.cancellations.find((x) => x.group_id === c.group.id && Math.abs(new Date(x.class_at) - c.at) <= 3 * 3600e3);
+      const hoursLeft = (c.at - Date.now()) / 3600e3;
+      const windowLeft = hoursLeft - h;
+      const windowText = windowLeft >= 48 ? `${Math.floor(windowLeft / 24)} dni` : `${Math.max(1, Math.floor(windowLeft))} h`;
+      let action = null;
+      if (cancelled) {
+        action = el('div', { class: 'note cancelled' }, 'Odwołane · trener wie',
+          c.at > new Date() ? el('button', { class: 'btn', onclick: () => act(() => rpc('link_undo', { p_token: token, p_id: cancelled.id })) }, 'Cofnij') : null);
+      } else if (windowLeft > 0) {
+        action = openReasons === c.key
+          ? el('div', { class: 'reasons' }, REASONS.map((r) =>
+              el('button', { class: 'btn', onclick: () => act(() => rpc('link_cancel', { p_token: token, p_group_id: c.group.id, p_class_at: c.at.toISOString(), p_reason: r })) }, r)),
+              el('button', { class: 'btn ghost', onclick: () => { openReasons = null; render(s); } }, 'Nie, zostaję'))
+          : el('div', { class: 'row' }, el('span', { class: 'window' }, `Możesz odwołać jeszcze przez ${windowText}`),
+              el('button', { class: 'btn', onclick: () => { openReasons = c.key; render(s); } }, 'Odwołaj'));
+      } else if (hoursLeft > 0) {
+        action = el('div', { class: 'note locked' }, `Za późno na odwołanie (mniej niż ${h} h). Napisz do trenera, jeśli to coś ważnego.`);
+      }
+      nodes.push(el('div', { class: 'card' },
+        el('div', { class: 'cls' },
+          el('div', { class: 'date' }, el('small', {}, DAYS[c.at.getDay()]), el('strong', {}, pad(c.at.getDate()))),
+          el('div', {}, el('div', { class: 'title' }, `${c.group.discipline} · ${c.group.name}`), el('p', { class: 'muted' }, `${time(c.at)} · ${c.duration} min`))),
+        action));
+    }
+    nodes.push(el('footer', {}, 'Ten link jest tylko dla Ciebie. Nie przekazuj go dalej.'));
+    app.replaceChildren(...nodes.filter(Boolean));
+  }
+
+  async function load() {
+    if (!/^[a-f0-9]{64}$/.test(token)) return message('Brakuje linku. Otwórz stronę z wiadomości od trenera.');
+    try {
+      const s = await rpc('link_overview', { p_token: token });
+      if (!s) return message('Ten link jest nieaktualny. Poproś trenera o nowy.');
+      render(s);
+    } catch (e) {
+      message(e.message, 'err');
+    }
+  }
+
+  load();
+  window.addEventListener('hashchange', () => location.reload());
+</script>
+</body>
+</html>
