@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://opnxkasrzuepgbimwndz.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'self'">
+<title>Panel admina · Notatnik Trenera</title>
+<style>
+  :root {
+    --bg: #F4F2EE; --card: #FFFFFF; --ink: #16181D; --soft: #2A2D33; --muted: #5B5F66;
+    --border: #E2DDD3; --accent: #C2410C; --accent-dark: #9A3412; --accent-soft: #FBE7DC;
+    --blue: #1E4F91; --blue-soft: #E3ECF8; --neutral: #EDEAE4;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font); }
+  header { background: var(--ink); color: #fff; }
+  .bar { max-width: 1180px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-weight: 800; font-size: 18px; letter-spacing: -.2px; }
+  .brand small { color: #F9B48F; font-weight: 700; font-size: 12px; letter-spacing: .8px; margin-left: 8px; }
+  nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+  nav a { color: #C9CCD2; text-decoration: none; padding: 8px 12px; border-radius: 10px; font-weight: 600; }
+  nav a.on { background: #2A2D33; color: #fff; }
+  .who { color: #C9CCD2; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { margin: 0; font-size: 28px; letter-spacing: -.4px; }
+  h2 { margin: 0; font-size: 18px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .center { max-width: 420px; margin: 8vh auto 0; display: flex; flex-direction: column; gap: 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .tile b { display: block; font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+  .tile span { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input, select { font: 15px var(--font); min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #D5CFC4; background: #fff; color: var(--ink); }
+  input[type=search] { flex: 1; min-width: 220px; }
+  button { font: 600 14px var(--font); min-height: 38px; padding: 0 14px; border-radius: 10px; cursor: pointer; border: 1px solid #D5CFC4; background: #fff; color: var(--ink); }
+  button:hover { background: var(--neutral); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: var(--accent-dark); }
+  button.danger { color: var(--accent-dark); border-color: #EBC3AE; }
+  button.danger:hover { background: var(--accent-soft); }
+  button:disabled { opacity: .5; cursor: default; }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; background: #FAF9F6; position: sticky; top: 0; }
+  tr.click { cursor: pointer; }
+  tr.click:hover td { background: #FBFAF7; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 7px; font-size: 12px; font-weight: 700; background: var(--neutral); margin: 0 4px 2px 0; white-space: nowrap; }
+  .badge.blue { background: var(--blue-soft); color: var(--blue); }
+  .badge.accent { background: var(--accent-soft); color: var(--accent-dark); }
+  .badge.dark { background: var(--ink); color: #fff; }
+  .note { border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .note.err { background: var(--accent-soft); color: var(--accent-dark); }
+  .note.ok { background: var(--blue-soft); color: var(--blue); }
+  .note.info { background: var(--neutral); color: var(--soft); }
+  dialog { border: 0; border-radius: 16px; padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  dialog::backdrop { background: rgba(22,24,29,.45); }
+  .dlg { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .dlg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px; font-size: 14px; }
+  .grid2 span:nth-child(odd) { color: var(--muted); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .section { border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .code { font: 800 32px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 6px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .empty { padding: 24px; text-align: center; color: var(--muted); }
+  @media (max-width: 640px) {
+    .grid2 { grid-template-columns: 1fr; } .grid2 span:nth-child(odd) { margin-top: 6px; }
+    nav { order: 3; flex-basis: 100%; } .who { margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+<header id="header" hidden>
+  <div class="bar">
+    <div class="brand">Notatnik Trenera<small>PANEL ADMINA</small></div>
+    <nav id="nav">
+      <a href="#pulpit" data-tab="pulpit">Pulpit</a>
+      <a href="#konta" data-tab="konta">Konta</a>
+      <a href="#kluby" data-tab="kluby">Kluby</a>
+      <a href="#dziennik" data-tab="dziennik">Dziennik</a>
+    </nav>
+    <div class="who"><span id="who"></span><button id="logout" type="button">Wyloguj</button></div>
+  </div>
+</header>
+<main id="app"><p class="muted">Ładowanie…</p></main>
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+
+<script src="supabase.js"></script>
+<script>
+'use strict';
+// Panel globalnego admina. Klucz poniżej to publiczny klucz "anon" — uprawnienia sprawdza serwer
+// (funkcje SQL z migracji 010 i funkcja serwerowa "admin"). Strona nie ma ciasteczek ani analityki.
+const SUPABASE_URL = 'https://opnxkasrzuepgbimwndz.supabase.co';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wbnhrYXNyenVlcGdiaW13bmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzQ1NDIsImV4cCI6MjEwODAxMDU0Mn0.07KQDYvpmzZuPK4aMW9vRZovB0qPYNzJdW2eXExtSpo';
+const sb = supabase.createClient(SUPABASE_URL, ANON, {
+  auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, storageKey: 'nt-admin-auth' },
+});
+
+const app = document.getElementById('app');
+const dlg = document.getElementById('dlg');
+const dlgBody = document.getElementById('dlgBody');
+let me = null;
+
+// ---------- Pomocnicze (zawsze textContent — dane z kont nigdy nie trafiają do HTML) ----------
+function h(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'class') e.className = v;
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) {
+    if (c === null || c === undefined || c === false) continue;
+    e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+const badge = (text, tone) => h('span', { class: 'badge' + (tone ? ' ' + tone : '') }, text);
+const fmt = (iso) => (iso ? new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
+const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('pl-PL') : '—');
+const PROVIDERS = { apple: 'Apple', google: 'Google', email: 'E-mail' };
+const ACTIONS = {
+  ban: 'Blokada konta', unban: 'Odblokowanie konta', set_email: 'Zmiana e-maila', login_link: 'Kod logowania',
+  delete_user: 'Usunięcie konta', sign_out: 'Wylogowanie z urządzeń', club_member: 'Zmiana w klubie',
+  club_update: 'Ustawienia klubu', club_delete: 'Usunięcie klubu',
+};
+function note(text, tone) { return h('div', { class: 'note ' + (tone || 'info') }, text); }
+function render(...nodes) { app.replaceChildren(...nodes); }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+async function rpc(name, args) {
+  const { data, error } = await sb.rpc(name, args || {});
+  if (error) throw new Error(error.message);
+  return data;
+}
+async function act(body) {
+  const { data, error } = await sb.functions.invoke('admin', { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) { /* brak treści */ }
+    if (/Failed to send|fetch/i.test(msg)) msg = 'Brak połączenia z funkcją „admin”. Czy jest wdrożona (Edge Functions) z wyłączonym „Enforce JWT verification”?';
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/** Przycisk z blokadą na czas działania i komunikatem w miejscu `out`. */
+function runBtn(label, cls, fn, out) {
+  const b = h('button', { type: 'button', class: cls }, label);
+  b.addEventListener('click', async () => {
+    b.disabled = true;
+    try {
+      const msg = await fn();
+      if (msg && out) out.replaceChildren(msg instanceof Node ? msg : note(msg, 'ok'));
+    } catch (e) {
+      if (out) out.replaceChildren(note(e.message, 'err')); else alert(e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+  return b;
+}
+/** Potwierdzenie przez przepisanie tekstu (usuwanie). */
+function confirmTyped(what, expected) {
+  const v = prompt(`${what}\n\nTego nie da się cofnąć. Wpisz: ${expected}`);
+  if (v === null) return false;
+  if (v.trim() !== expected) { alert('Tekst się nie zgadza — nic nie zostało zmienione.'); return false; }
+  return true;
+}
+function openDialog(...nodes) {
+  dlgBody.replaceChildren(...nodes);
+  if (!dlg.open) dlg.showModal();
+}
+function dlgHead(title, sub) {
+  return h('div', { class: 'dlg-head' },
+    h('div', {}, h('h2', {}, title), sub ? h('div', { class: 'muted small' }, sub) : null),
+    h('button', { type: 'button', onclick: () => dlg.close() }, 'Zamknij'));
+}
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+// ---------- Logowanie ----------
+function loginView(message) {
+  document.getElementById('header').hidden = true;
+  const emailIn = h('input', { type: 'email', placeholder: 'twoj@gmail.com', autocomplete: 'email', required: true });
+  const codeIn = h('input', { inputmode: 'numeric', placeholder: '123456', maxlength: 6, autocomplete: 'one-time-code' });
+  const out = h('div', {});
+  const codeBox = h('div', { class: 'row', hidden: true }, codeIn,
+    runBtn('Zaloguj', 'primary', async () => {
+      const { error } = await sb.auth.verifyOtp({ email: emailIn.value.trim().toLowerCase(), token: codeIn.value.trim(), type: 'email' });
+      if (error) throw new Error(error.message);
+      await boot();
+    }, out));
+  render(h('div', { class: 'center' },
+    h('h1', {}, 'Panel admina'),
+    h('p', { class: 'muted' }, 'Notatnik Trenera — dostęp tylko dla globalnych adminów.'),
+    message ? note(message, 'err') : null,
+    h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:12px' },
+      runBtn('Zaloguj przez Google', 'primary', async () => {
+        const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+        if (error) throw new Error(error.message);
+      }, out),
+      h('div', { class: 'muted small' }, 'albo kodem z e-maila (konto musi już istnieć):'),
+      h('div', { class: 'row' }, emailIn,
+        runBtn('Wyślij kod', '', async () => {
+          const email = emailIn.value.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Wpisz poprawny e-mail.');
+          const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+          if (error) throw new Error(error.message);
+          codeBox.hidden = false;
+          codeIn.focus();
+          return 'Kod wysłany. Sprawdź skrzynkę (i spam).';
+        }, out)),
+      codeBox,
+      out)));
+}
+
+// ---------- Pulpit ----------
+async function pulpit() {
+  render(h('h1', {}, 'Pulpit'), h('p', { class: 'muted' }, 'Ładowanie…'));
+  const s = await rpc('admin_stats');
+  const tile = (v, label) => h('div', { class: 'card tile' }, h('b', {}, v), h('span', {}, label));
+  render(
+    h('h1', {}, 'Pulpit'),
+    h('div', { class: 'tiles' },
+      tile(s.users, 'kont'), tile(s.active_30d, 'aktywnych (30 dni)'), tile(s.new_30d, 'nowych (30 dni)'),
+      tile(s.coaches, 'trenerów z uczniami'), tile(s.clubs, 'klubów'), tile(s.students, 'uczniów'),
+      tile(s.student_accounts, 'uczniów z kontem'), tile(s.trainings_30d, 'treningów (30 dni)'), tile(s.banned, 'zablokowanych')),
+    note('Panel pokazuje konta, kluby i liczby — bez imion uczniów, obecności, wpłat i notatek (zasada minimum danych). Każde działanie trafia do dziennika.'));
+}
+
+// ---------- Konta ----------
+let usersQuery = '';
+async function konta() {
+  const search = h('input', { type: 'search', placeholder: 'Szukaj: e-mail, imię albo id konta', value: usersQuery });
+  const box = h('div', {}, h('p', { class: 'muted' }, 'Ładowanie…'));
+  const load = async () => {
+    usersQuery = search.value;
+    const list = await rpc('admin_users', { p_query: usersQuery, p_limit: 200, p_offset: 0 });
+    if (!list.length) { box.replaceChildren(h('div', { class: 'card empty' }, 'Brak kont.')); return; }
+    box.replaceChildren(h('div', { class: 'card tablewrap', style: 'padding:0' }, h('table', {},
+      h('thead', {}, h('tr', {}, ['Konto', 'Logowanie', 'Rola', 'Utworzone', 'Ostatnio', ''].map((t) => h('th', {}, t)))),
+      h('tbody', {}, list.map((u) => h('tr', { class: 'click', onclick: () => userDialog(u, load) },
+        h('td', {}, h('div', { style: 'font-weight:700' }, u.email || '(bez e-maila)'), u.name ? h('div', { class: 'muted small' }, u.name) : null),
+        h('td', {}, badge(PROVIDERS[u.provider] || u.provider || '—')),
+        h('td', {}, roleBadges(u)),
+        h('td', { class: 'small' }, fmtDay(u.created_at)),
+        h('td', { class: 'small' }, fmt(u.last_sign_in_at)),
+        h('td', {}, u.banned ? badge('Zablokowane', 'accent') : null)))))));
+  };
+  search.addEventListener('input', debounce(() => load().catch(showErr), 300));
+  render(h('h1', {}, 'Konta'), h('div', { class: 'toolbar' }, search), box);
+  await load();
+}
+function roleBadges(u) {
+  const out = [];
+  if (u.is_admin) out.push(badge('Globalny admin', 'dark'));
+  if (u.students > 0 || u.groups > 0) out.push(badge(`Trener · ${u.students} ucz.`, 'blue'));
+  for (const c of u.clubs || []) out.push(badge(`${c.name} · ${c.role === 'admin' ? 'admin' : 'trener'}`, 'blue'));
+  if (u.is_student) out.push(badge('Uczeń'));
+  return out.length ? out : [h('span', { class: 'muted small' }, '—')];
+}
+
+function userDialog(u, reload) {
+  const out = h('div', {});
+  const emailIn = h('input', { type: 'email', value: u.email || '', style: 'flex:1;min-width:220px' });
+  const refresh = async () => {
+    const fresh = (await rpc('admin_users', { p_query: u.id, p_limit: 1, p_offset: 0 }))[0];
+    if (fresh) Object.assign(u, fresh);
+    reload().catch(() => {});
+  };
+  const self = me && me.id === u.id;
+  openDialog(
+    dlgHead(u.email || '(bez e-maila)', u.name || ''),
+    h('div', { class: 'grid2' },
+      h('span', {}, 'Id konta'), h('span', { class: 'mono' }, u.id),
+      h('span', {}, 'Logowanie'), h('span', {}, (u.providers || []).map((p) => PROVIDERS[p] || p).join(', ') || '—'),
+      h('span', {}, 'Utworzone'), h('span', {}, fmt(u.created_at)),
+      h('span', {}, 'Ostatnie logowanie'), h('span', {}, fmt(u.last_sign_in_at)),
+      h('span', {}, 'Notatnik prywatny'), h('span', {}, `${u.students} uczniów, ${u.groups} grup`),
+      h('span', {}, 'Kluby'), h('span', {}, (u.clubs || []).length
+        ? (u.clubs || []).map((c) => h('a', { href: '#kluby', onclick: (e) => { e.preventDefault(); clubDialog(c.id); } }, `${c.name} (${c.role === 'admin' ? 'admin' : 'trener'})`)).reduce((a, x) => (a.length ? [...a, ', ', x] : [x]), [])
+        : '—'),
+      h('span', {}, 'Status'), h('span', {}, u.banned ? badge('Zablokowane', 'accent') : 'Aktywne', u.is_admin ? badge('Globalny admin', 'dark') : null)),
+    out,
+    h('div', { class: 'section' },
+      h('h2', {}, 'Dostęp do konta'),
+      h('div', { class: 'muted small' }, 'W aplikacji nie ma haseł (Apple, Google, kod z e-maila). Zamiast resetu: jednorazowy kod, zmiana e-maila, wylogowanie.'),
+      h('div', { class: 'actions' },
+        runBtn('Jednorazowy kod logowania', 'primary', async () => {
+          const r = await act({ action: 'login_link', user_id: u.id });
+          return h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:8px;background:var(--blue-soft);border-color:#C9D9EF' },
+            h('div', { class: 'small' }, `Kod dla ${r.email} (ważny ok. godziny, jednorazowy):`),
+            h('div', { class: 'code' }, r.code || '—'),
+            h('div', { class: 'small' }, 'W aplikacji: trener — Ustawienia → „Zaloguj kodem z e-maila” → „Mam kod”; uczeń — „Albo kodem z e-maila” → „Mam już kod”. Przekaż kod tylko właścicielowi konta (telefonicznie / osobiście).'),
+            r.link ? h('details', {}, h('summary', { class: 'small' }, 'Link do logowania w przeglądarce'), h('div', { class: 'mono' }, r.link)) : null);
+        }, out),
+        runBtn('Wyloguj ze wszystkich urządzeń', '', async () => {
+          if (!confirm(`Wylogować ${u.email || u.id} ze wszystkich urządzeń?`)) return null;
+          const n = await rpc('admin_sign_out', { p_user: u.id });
+          return `Zamknięto sesji: ${n}. Bieżący dostęp wygaśnie najpóźniej w ciągu godziny.`;
+        }, out),
+        self ? null : u.banned
+          ? runBtn('Odblokuj konto', '', async () => { await act({ action: 'unban', user_id: u.id }); await refresh(); userDialog(u, reload); return null; }, out)
+          : runBtn('Zablokuj konto', 'danger', async () => {
+            if (!confirm(`Zablokować ${u.email || u.id}? Nie zaloguje się, dopóki nie odblokujesz.`)) return null;
+            await act({ action: 'ban', user_id: u.id });
+            await rpc('admin_sign_out', { p_user: u.id }).catch(() => 0);
+            await refresh(); userDialog(u, reload); return null;
+          }, out)),
+      h('div', { class: 'row' }, emailIn,
+        runBtn('Zmień e-mail', '', async () => {
+          const email = emailIn.value.trim().toLowerCase();
+          if (email === (u.email || '')) throw new Error('To ten sam adres.');
+          if (!confirm(`Zmienić e-mail konta na ${email}? Logowanie kodem będzie działać na nowy adres.`)) return null;
+          await act({ action: 'set_email', user_id: u.id, email });
+          await refresh();
+          return `E-mail zmieniony na ${email}.`;
+        }, out))),
+    self ? null : h('div', { class: 'section' },
+      h('h2', {}, 'Usunięcie konta'),
+      h('div', { class: 'muted small' }, 'Kasuje konto i notatnik prywatny w chmurze. Kluby zostają (rolę admina przejmie inny trener; ostatnia osoba = klub znika). Uczeń zostaje u trenera bez powiązania z kontem.'),
+      h('div', { class: 'actions' }, runBtn('Usuń konto', 'danger', async () => {
+        if (!confirmTyped(`Usunąć konto ${u.email || u.id}?`, u.email || u.id)) return null;
+        await act({ action: 'delete_user', user_id: u.id });
+        dlg.close();
+        await reload();
+        return null;
+      }, out))));
+}
+
+// ---------- Kluby ----------
+let clubsQuery = '';
+let reloadClubs = async () => {};
+async function kluby() {
+  const search = h('input', { type: 'search', placeholder: 'Szukaj klubu po nazwie', value: clubsQuery });
+  const box = h('div', {}, h('p', { class: 'muted' }, 'Ładowanie…'));
+  reloadClubs = async () => {
+    clubsQuery = search.value;
+    const list = await rpc('admin_clubs', { p_query: clubsQuery });
+    if (!list.length) { box.replaceChildren(h('div', { class: 'card empty' }, 'Brak klubów.')); return; }
+    box.replaceChildren(h('div', { class: 'card tablewrap', style: 'padding:0' }, h('table', {},
+      h('thead', {}, h('tr', {}, ['Klub', 'Admini', 'Trenerzy', 'Uczniowie', 'Grupy', 'Treningi 30 dni', 'Założony'].map((t) => h('th', {}, t)))),
+      h('tbody', {}, list.map((c) => h('tr', { class: 'click', onclick: () => clubDialog(c.id) },
+        h('td', { style: 'font-weight:700' }, c.name),
+        h('td', {}, (c.admins || []).join(', ') || badge('brak admina', 'accent')),
+        h('td', {}, c.members), h('td', {}, c.students), h('td', {}, c.groups), h('td', {}, c.trainings_30d),
+        h('td', { class: 'small' }, fmtDay(c.created_at))))))));
+  };
+  search.addEventListener('input', debounce(() => reloadClubs().catch(showErr), 300));
+  render(h('h1', {}, 'Kluby'), h('div', { class: 'toolbar' }, search), box);
+  await reloadClubs();
+}
+
+async function clubDialog(id) {
+  const c = await rpc('admin_club', { p_space: id });
+  if (!c) { alert('Nie ma takiego klubu.'); return; }
+  const out = h('div', {});
+  const again = async () => { await clubDialog(id); reloadClubs().catch(() => {}); };
+  const nameIn = h('input', { value: c.name, maxlength: 60, style: 'flex:1;min-width:200px' });
+  const hoursIn = h('select', {}, [12, 24, 48].map((x) => h('option', { value: x, selected: c.cancel_hours === x }, `${x} h`)));
+  const addEmail = h('input', { type: 'email', placeholder: 'e-mail trenera (konto musi istnieć)', style: 'flex:1;min-width:220px' });
+  const addRole = h('select', {}, h('option', { value: 'coach' }, 'trener'), h('option', { value: 'admin' }, 'admin'));
+  const admins = c.members.filter((m) => m.role === 'admin').length;
+
+  openDialog(
+    dlgHead(c.name, `Założony ${fmtDay(c.created_at)} · ${c.students} uczniów · ${c.groups} grup · limit odwołań ${c.cancel_hours} h`),
+    out,
+    h('div', { class: 'section' },
+      h('h2', {}, 'Trenerzy'),
+      h('div', { class: 'tablewrap' }, h('table', {},
+        h('thead', {}, h('tr', {}, ['Osoba', 'Rola', 'Grup', ''].map((t) => h('th', {}, t)))),
+        h('tbody', {}, c.members.map((m) => {
+          const sel = h('select', {}, h('option', { value: 'admin', selected: m.role === 'admin' }, 'admin'), h('option', { value: 'coach', selected: m.role === 'coach' }, 'trener'));
+          sel.addEventListener('change', async () => {
+            try { await rpc('admin_set_member', { p_space: id, p_user: m.user_id, p_role: sel.value }); await again(); }
+            catch (e) { sel.value = m.role; out.replaceChildren(note(e.message, 'err')); }
+          });
+          return h('tr', {},
+            h('td', {}, h('div', { style: 'font-weight:700' }, m.name || m.email || m.user_id), h('div', { class: 'muted small' }, m.email)),
+            h('td', {}, sel),
+            h('td', {}, m.groups),
+            h('td', {}, runBtn('Usuń z klubu', 'danger', async () => {
+              if (m.role === 'admin' && admins === 1 && c.members.length > 1) throw new Error('To jedyny admin. Najpierw nadaj komuś rolę admina.');
+              if (!confirm(`Usunąć ${m.email || m.name} z klubu „${c.name}”? Dane klubu zostają.`)) return null;
+              await rpc('admin_set_member', { p_space: id, p_user: m.user_id, p_role: null });
+              await again();
+              return null;
+            }, out)));
+        })))),
+      h('div', { class: 'muted small' }, 'Oddanie klubu: nadaj rolę admina nowej osobie, potem zmień lub usuń starego admina.'),
+      h('div', { class: 'row' }, addEmail, addRole,
+        runBtn('Dodaj do klubu', '', async () => {
+          const u = await rpc('admin_find_user', { p_email: addEmail.value });
+          if (!u) throw new Error('Nie ma konta z tym e-mailem. Ta osoba musi najpierw zalogować się w aplikacji.');
+          await rpc('admin_set_member', { p_space: id, p_user: u.id, p_role: addRole.value });
+          await again();
+          return null;
+        }, out))),
+    h('div', { class: 'section' },
+      h('h2', {}, 'Ustawienia klubu'),
+      h('div', { class: 'row' }, nameIn, hoursIn,
+        runBtn('Zapisz', '', async () => {
+          await rpc('admin_update_club', { p_space: id, p_name: nameIn.value, p_cancel_hours: Number(hoursIn.value) });
+          await again();
+          return null;
+        }, out))),
+    h('div', { class: 'section' },
+      h('h2', {}, 'Usunięcie klubu'),
+      h('div', { class: 'muted small' }, 'Kasuje wszystkie dane klubu u wszystkich trenerów: grupy, uczniów, treningi, obecności, wpłaty. Linki uczniów przestaną działać.'),
+      h('div', { class: 'actions' }, runBtn('Usuń klub', 'danger', async () => {
+        if (!confirmTyped(`Usunąć klub „${c.name}”?`, c.name)) return null;
+        await rpc('admin_delete_club', { p_space: id });
+        dlg.close();
+        await reloadClubs();
+        return null;
+      }, out))));
+}
+
+// ---------- Dziennik ----------
+async function dziennik() {
+  render(h('h1', {}, 'Dziennik'), h('p', { class: 'muted' }, 'Ładowanie…'));
+  const list = await rpc('admin_audit_log', { p_limit: 300 });
+  const details = (d) => Object.entries(d || {}).filter(([, v]) => v !== null && v !== '').map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(' · ');
+  render(
+    h('h1', {}, 'Dziennik'),
+    h('p', { class: 'muted' }, 'Kto, kiedy i co zmienił w panelu (ostatnie 300 działań).'),
+    list.length
+      ? h('div', { class: 'card tablewrap', style: 'padding:0' }, h('table', {},
+        h('thead', {}, h('tr', {}, ['Kiedy', 'Admin', 'Działanie', 'Szczegóły'].map((t) => h('th', {}, t)))),
+        h('tbody', {}, list.map((l) => h('tr', {},
+          h('td', { class: 'small', style: 'white-space:nowrap' }, fmt(l.created_at)),
+          h('td', { class: 'small' }, l.admin_email),
+          h('td', {}, ACTIONS[l.action] || l.action),
+          h('td', { class: 'small' }, details(l.details) || l.target))))))
+      : h('div', { class: 'card empty' }, 'Jeszcze nic się nie wydarzyło.'));
+}
+
+// ---------- Nawigacja ----------
+const TABS = { pulpit, konta, kluby, dziennik };
+function showErr(e) { app.prepend(note(e.message || String(e), 'err')); }
+async function route() {
+  const tab = (location.hash.slice(1) || 'pulpit');
+  const fn = TABS[tab] || pulpit;
+  for (const a of document.querySelectorAll('#nav a')) a.classList.toggle('on', a.dataset.tab === tab);
+  try { await fn(); } catch (e) { render(note(e.message, 'err')); }
+}
+window.addEventListener('hashchange', () => { if (me) route(); });
+document.getElementById('logout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  me = null;
+  loginView();
+});
+
+async function boot() {
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return loginView();
+  let ok = false;
+  try { ok = await rpc('is_platform_admin'); } catch (e) { return loginView(e.message); }
+  if (!ok) {
+    const email = data.session.user.email || data.session.user.id;
+    await sb.auth.signOut();
+    return loginView(`Konto ${email} nie jest globalnym adminem.`);
+  }
+  me = data.session.user;
+  document.getElementById('who').textContent = me.email || '';
+  document.getElementById('header').hidden = false;
+  if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + location.hash);
+  route();
+}
+boot();
+</script>
+</body>
+</html>
