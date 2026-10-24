@@ -941,7 +941,7 @@ async function grupy() {
   render(
     h('div', { class: 'row' }, h('h1', {}, 'Grupy'), h('span', { class: 'spacer' }),
       h('button', { type: 'button', class: 'primary', onclick: () => groupDialog(null, 'group', members) }, '+ Nowa grupa'),
-      h('button', { type: 'button', onclick: () => groupDialog(null, 'open', members) }, '+ Wolne wejścia')),
+      openGroups().length ? h('button', { type: 'button', onclick: () => groupDialog(null, 'open', members) }, '+ Wolne wejścia') : null),
     list.length ? table(['Nazwa', 'Rodzaj', 'Dyscyplina', ['Klientów', 'num'], 'Grafik', space.club ? 'Prowadzący' : ''],
       list.map((g) => h('tr', { class: 'click', onclick: () => groupDialog(g, g.kind, members) },
         td(h('b', {}, g.name)), td(badge(KIND[g.kind] || g.kind, g.kind === 'open' ? 'blue' : '')), td(g.discipline), td(String(count(g.id)), 'num'),
@@ -954,7 +954,7 @@ function groupDialog(g, kind, members) {
   const name = h('input', { value: g ? g.name : '', maxlength: 60, placeholder: kind === 'open' ? 'Siłownia' : 'Początkujący' });
   const listId = 'disc-' + Math.random().toString(36).slice(2);
   const disc = h('input', { list: listId, value: g ? g.discipline : kind === 'open' ? 'Siłownia' : 'Boks', maxlength: 40 });
-  const kindSel = select(Object.entries(KIND), g ? g.kind : kind);
+  const kindSel = select(Object.entries(KIND).map(([v, t]) => [v, v === 'open' ? 'Wolne wejścia (siłownia)' : t]), g ? g.kind : kind);
   const slots = h('div', { class: 'stack' });
   const addSlot = (sl) => {
     const day = select(WEEKDAYS.map(([v, t]) => [String(v), t]), String(sl ? sl.weekday : 1));
@@ -1065,11 +1065,15 @@ async function trenerzy() {
 const TABS = { pulpit, recepcja, klienci, wplaty, grupy, trenerzy, raport };
 async function route() {
   if (!me || !space) return;
-  const tab = location.hash.slice(1) || 'pulpit';
+  let tab = location.hash.slice(1) || 'pulpit';
+  // Recepcja tylko tam, gdzie są wolne wejścia (siłownia) — trener personalny jej nie widzi.
+  const gym = await getCore().then(() => openGroups().length > 0, () => false);
+  if (tab === 'recepcja' && !gym) tab = 'pulpit';
   const fn = TABS[tab] || pulpit;
   for (const a of document.querySelectorAll('#nav a')) {
     a.classList.toggle('on', a.dataset.tab === tab);
     if (a.hasAttribute('data-admin')) a.hidden = !(space.club && isAdmin());
+    if (a.dataset.tab === 'recepcja') a.hidden = !gym;
   }
   try { await fn(); } catch (e) { render(h('h1', {}, ''), note(friendly(e.message || String(e)), 'err')); }
 }
