@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://opnxkasrzuepgbimwndz.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'self'">
+<title>Panel klubu · Notatnik Trenera</title>
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<header id="header" hidden>
+  <div class="bar">
+    <div class="brand">Notatnik Trenera<small>PANEL KLUBU</small></div>
+    <select id="space" aria-label="Klub"></select>
+    <nav id="nav" aria-label="Sekcje">
+      <a href="#pulpit" data-tab="pulpit">Pulpit</a>
+      <a href="#recepcja" data-tab="recepcja">Recepcja</a>
+      <a href="#klienci" data-tab="klienci">Klienci</a>
+      <a href="#wplaty" data-tab="wplaty">Wpłaty</a>
+      <a href="#grupy" data-tab="grupy">Grupy</a>
+      <a href="#trenerzy" data-tab="trenerzy" data-admin>Trenerzy</a>
+      <a href="#raport" data-tab="raport">Raport</a>
+    </nav>
+    <div class="who"><span id="who"></span><button id="logout" type="button">Wyloguj</button></div>
+  </div>
+</header>
+<main id="app"><p class="muted">Ładowanie…</p></main>
+<section id="poster" aria-hidden="true"></section>
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+<script src="supabase.js"></script>
+<script src="qrcode.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
