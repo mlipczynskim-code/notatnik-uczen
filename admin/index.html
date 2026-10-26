@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://opnxkasrzuepgbimwndz.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'self'">
-<title>Panel admina · Notatnik Trenera</title>
+<title>Panel admina · Cień Trenera</title>
 <style>
   :root {
     --bg: #F4F2EE; --card: #FFFFFF; --ink: #16181D; --soft: #2A2D33; --muted: #5B5F66;
@@ -80,7 +80,7 @@
 <body>
 <header id="header" hidden>
   <div class="bar">
-    <div class="brand">Notatnik Trenera<small>PANEL ADMINA</small></div>
+    <div class="brand">Cień Trenera<small>PANEL ADMINA</small></div>
     <nav id="nav">
       <a href="#pulpit" data-tab="pulpit">Pulpit</a>
       <a href="#konta" data-tab="konta">Konta</a>
@@ -276,7 +276,7 @@ function loginView(message) {
     }, out));
   render(h('div', { class: 'center' },
     h('h1', {}, 'Panel admina'),
-    h('p', { class: 'muted' }, 'Notatnik Trenera — dostęp tylko dla globalnych adminów.'),
+    h('p', { class: 'muted' }, 'Cień Trenera — dostęp tylko dla globalnych adminów.'),
     message ? note(message, 'err') : null,
     h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:12px' },
       runBtn('Zaloguj przez Google', 'primary', async () => {

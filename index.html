@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#F4F2EE">
-<title>Moje zajęcia · Notatnik Trenera</title>
+<title>Moje zajęcia · Cień Trenera</title>
 <style>
   :root {
     --bg: #F4F2EE; --card: #FFFFFF; --ink: #16181D; --soft: #2A2D33; --muted: #5B5F66;
@@ -116,7 +116,7 @@
   }
 
   function message(text, cls) {
-    app.replaceChildren(el('div', { class: `card` }, el('h1', {}, 'Notatnik Trenera'), el('p', { class: `muted ${cls || ''}` }, text)));
+    app.replaceChildren(el('div', { class: `card` }, el('h1', {}, 'Cień Trenera'), el('p', { class: `muted ${cls || ''}` }, text)));
   }
 
   async function act(fn) {
@@ -133,7 +133,7 @@
     const classes = upcoming(s);
     const h = s.cancel_hours;
     const nodes = [
-      el('div', {}, el('p', { class: 'muted' }, s.coach_name ? `Trener: ${s.coach_name}` : 'Notatnik Trenera'), el('h1', {}, `Cześć, ${s.name.split(' ')[0]}`)),
+      el('div', {}, el('p', { class: 'muted' }, s.coach_name ? `Trener: ${s.coach_name}` : 'Cień Trenera'), el('h1', {}, `Cześć, ${s.name.split(' ')[0]}`)),
       el('div', { class: 'row' },
         s.balance > 0 ? el('span', { class: 'badge pay' }, `Do zapłaty ${s.balance} zł`) : el('span', { class: 'badge ok' }, 'Opłacone'),
         s.pass_type === 'entries' ? el('span', { class: 'badge' }, `Karnet: ${s.entries_left} wejść`) : null,

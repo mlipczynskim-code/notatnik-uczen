@@ -273,7 +273,7 @@ function loginView(message) {
   };
   render(h('div', { class: 'center' },
     h('h1', {}, 'Panel klubu'),
-    h('p', { class: 'muted' }, 'Klienci, karnety, wejścia i wpłaty Twojego klubu — to samo konto co w aplikacji Notatnik Trenera.'),
+    h('p', { class: 'muted' }, 'Klienci, karnety, wejścia i wpłaty Twojego klubu — to samo konto co w aplikacji Cień Trenera.'),
     message ? note(message, 'err') : null,
     h('div', { class: 'card stack' },
       runBtn('Zaloguj przez Google', 'primary', oauth('google'), out),
@@ -497,7 +497,7 @@ async function qrDialog(rotate) {
   try { token = await rpc('checkin_token', { p_space: space.id, p_rotate: !!rotate }); } catch (e) { openDialog(dlgHead('Kod QR przy wejściu'), note(e.message, 'err')); return; }
   const url = `notatniktrenera://wejscie?k=${token}`;
   const makePoster = () => {
-    posterEl.replaceChildren(h('h1', {}, space.name), qrSvg(url), h('p', {}, 'Zeskanuj aparatem telefonu i otwórz w aplikacji Notatnik Trenera — wejście zapisze się samo.'),
+    posterEl.replaceChildren(h('h1', {}, space.name), qrSvg(url), h('p', {}, 'Zeskanuj aparatem telefonu i otwórz w aplikacji Cień Trenera — wejście zapisze się samo.'),
       h('p', { class: 'small' }, 'Nie masz aplikacji? Podejdź do recepcji.'));
   };
   openDialog(dlgHead('Kod QR przy wejściu', space.name),
@@ -871,7 +871,7 @@ async function raportCsv(month) {
   const tr = groupRows.reduce((a, g) => a + g.trainings, 0), pr = groupRows.reduce((a, g) => a + g.present, 0), all2 = groupRows.reduce((a, g) => a + g.present + g.absent + g.cancelled, 0);
   const today = isoDay(new Date());
   const rows = [
-    line(`Notatnik Trenera – raport: ${monthLabel(month)}${space.club ? ` – ${space.name}` : ''}`),
+    line(`Cień Trenera – raport: ${monthLabel(month)}${space.club ? ` – ${space.name}` : ''}`),
     line(`Wygenerowano: ${today}`), '',
     line('WPŁATY'),
     line('Data', 'Uczeń', 'Kwota (zł)', 'Za co', 'Forma płatności', 'Uwagi'),
