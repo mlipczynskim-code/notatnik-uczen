@@ -85,6 +85,7 @@
       <a href="#pulpit" data-tab="pulpit">Pulpit</a>
       <a href="#konta" data-tab="konta">Konta</a>
       <a href="#kluby" data-tab="kluby">Kluby</a>
+      <a href="#dostep" data-tab="dostep">Kody dostępu</a>
       <a href="#dziennik" data-tab="dziennik">Dziennik</a>
     </nav>
     <div class="who"><span id="who"></span><button id="logout" type="button">Wyloguj</button></div>
@@ -132,7 +133,81 @@ const ACTIONS = {
   ban: 'Blokada konta', unban: 'Odblokowanie konta', set_email: 'Zmiana e-maila', login_link: 'Kod logowania',
   delete_user: 'Usunięcie konta', sign_out: 'Wylogowanie z urządzeń', club_member: 'Zmiana w klubie',
   club_update: 'Ustawienia klubu', club_delete: 'Usunięcie klubu',
+  access_codes: 'Nowe kody dostępu', access_code_delete: 'Usunięcie kodu dostępu', access_set: 'Dostęp trenera (ręcznie)',
+  club_paid: 'Klub opłacony do',
 };
+const ACCESS_STATUS = {
+  admin: 'Globalny admin — pełny dostęp', active: 'Aktywny', club: 'W ramach klubu', trial: 'Okres próbny',
+  expired: 'Wygasł', new: 'Jeszcze nie wszedł do panelu trenera', legacy: 'Pełny (bez modułu płatności)',
+};
+const SOURCES = { trial: 'okres próbny', code: 'kod', admin: 'nadany ręcznie', store: 'subskrypcja App Store' };
+const addDays = (iso, n) => {
+  const base = Math.max(Date.now(), iso ? new Date(iso).getTime() : 0);
+  return new Date(base + n * 864e5).toISOString();
+};
+/** Sekcja „Dostęp do panelu trenera” w oknie konta. */
+function accessSection(userId) {
+  const box = h('div', { class: 'section' }, h('h2', {}, 'Dostęp do panelu trenera'), h('p', { class: 'muted small' }, 'Ładowanie…'));
+  const out = h('div', {});
+  const draw = (a) => {
+    const dateIn = h('input', { type: 'date', value: a.paid_until ? a.paid_until.slice(0, 10) : '' });
+    const set = (until) => async () => { draw(await rpc('admin_set_access', { p_user: userId, p_until: until })); return 'Zapisano.'; };
+    box.replaceChildren(
+      h('h2', {}, 'Dostęp do panelu trenera'),
+      h('div', { class: 'grid2' },
+        h('span', {}, 'Stan'), h('span', {}, ACCESS_STATUS[a.status] || a.status, a.active ? '' : ' ', a.active ? null : badge('bez dostępu', 'accent')),
+        h('span', {}, 'Aktywny do'), h('span', {}, fmt(a.until)),
+        h('span', {}, 'Okres próbny do'), h('span', {}, fmt(a.trial_end)),
+        h('span', {}, 'Opłacony / kod do'), h('span', {}, a.paid_until ? `${fmt(a.paid_until)} (${SOURCES[a.source] || a.source})` : '—'),
+        h('span', {}, 'Klub'), h('span', {}, a.club_name ? `${a.club_name} — do ${fmt(a.club_until)}` : '—')),
+      out,
+      h('div', { class: 'actions' },
+        runBtn('+30 dni', '', set(addDays(a.paid_until, 30)), out),
+        runBtn('+1 rok', '', set(addDays(a.paid_until, 365)), out),
+        runBtn('Bez limitu', '', set('2099-12-31T23:59:59Z'), out),
+        a.paid_until ? runBtn('Zabierz ręczny dostęp', 'danger', async () => {
+          if (!confirm('Zabrać dostęp nadany ręcznie / kodem? Okres próbny i klub działają dalej.')) return null;
+          return set(null)();
+        }, out) : null),
+      h('div', { class: 'row' }, dateIn, runBtn('Ustaw datę', '', async () => {
+        if (!dateIn.value) throw new Error('Wybierz datę.');
+        return set(new Date(dateIn.value + 'T23:59:59').toISOString())();
+      }, out)));
+  };
+  rpc('admin_user_access', { p_user: userId }).then(draw).catch((e) => box.replaceChildren(h('h2', {}, 'Dostęp do panelu trenera'),
+    note(/admin_user_access|does not exist|Could not find/i.test(e.message) ? 'Uruchom w Supabase migrację 015_access.sql.' : e.message, 'err')));
+  return box;
+}
+/** Sekcja „Opłacony do” w oknie klubu. */
+function clubPaidSection(spaceId) {
+  const box = h('div', { class: 'section' }, h('h2', {}, 'Dostęp klubu'), h('p', { class: 'muted small' }, 'Ładowanie…'));
+  const out = h('div', {});
+  const draw = (a) => {
+    const dateIn = h('input', { type: 'date', value: a.paid_until ? a.paid_until.slice(0, 10) : '' });
+    const set = (until) => async () => { await rpc('admin_set_club_paid', { p_space: spaceId, p_until: until }); draw(await rpc('admin_club_access', { p_space: spaceId })); return 'Zapisano.'; };
+    const active = a.until && new Date(a.until) > new Date();
+    box.replaceChildren(
+      h('h2', {}, 'Dostęp klubu'),
+      h('div', { class: 'muted small' }, 'Klub płaci za wszystkich: każdy trener i admin klubu ma dostęp do panelu trenera, dopóki klub jest aktywny.'),
+      h('div', { class: 'grid2' },
+        h('span', {}, 'Stan'), h('span', {}, active ? 'Aktywny' : badge('Nieaktywny', 'accent')),
+        h('span', {}, 'Aktywny do'), h('span', {}, fmt(a.until)),
+        h('span', {}, '14 dni od założenia'), h('span', {}, fmt(a.trial_end)),
+        h('span', {}, 'Opłacony do'), h('span', {}, fmt(a.paid_until))),
+      out,
+      h('div', { class: 'actions' },
+        runBtn('+1 miesiąc', '', set(addDays(a.paid_until, 31)), out),
+        runBtn('+1 rok', '', set(addDays(a.paid_until, 365)), out),
+        a.paid_until ? runBtn('Wyczyść', 'danger', async () => (confirm('Wyczyścić „opłacony do”?') ? set(null)() : null), out) : null),
+      h('div', { class: 'row' }, dateIn, runBtn('Ustaw datę', '', async () => {
+        if (!dateIn.value) throw new Error('Wybierz datę.');
+        return set(new Date(dateIn.value + 'T23:59:59').toISOString())();
+      }, out)));
+  };
+  rpc('admin_club_access', { p_space: spaceId }).then(draw).catch((e) => box.replaceChildren(h('h2', {}, 'Dostęp klubu'),
+    note(/admin_club_access|does not exist|Could not find/i.test(e.message) ? 'Uruchom w Supabase migrację 015_access.sql.' : e.message, 'err')));
+  return box;
+}
 function note(text, tone) { return h('div', { class: 'note ' + (tone || 'info') }, text); }
 function render(...nodes) { app.replaceChildren(...nodes); }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
@@ -291,6 +366,7 @@ function userDialog(u, reload) {
         : '—'),
       h('span', {}, 'Status'), h('span', {}, u.banned ? badge('Zablokowane', 'accent') : 'Aktywne', u.is_admin ? badge('Globalny admin', 'dark') : null)),
     out,
+    accessSection(u.id),
     h('div', { class: 'section' },
       h('h2', {}, 'Dostęp do konta'),
       h('div', { class: 'muted small' }, 'W aplikacji nie ma haseł (Apple, Google, kod z e-maila). Zamiast resetu: jednorazowy kod, zmiana e-maila, wylogowanie.'),
@@ -405,6 +481,7 @@ async function clubDialog(id) {
           await again();
           return null;
         }, out))),
+    clubPaidSection(id),
     h('div', { class: 'section' },
       h('h2', {}, 'Ustawienia klubu'),
       h('div', { class: 'row' }, nameIn, hoursIn,
@@ -423,6 +500,65 @@ async function clubDialog(id) {
         await reloadClubs();
         return null;
       }, out))));
+}
+
+// ---------- Kody dostępu ----------
+async function dostep() {
+  const days = h('select', {}, [7, 14, 30, 60, 90, 180, 365].map((d) => h('option', { value: d, selected: d === 30 }, `${d} dni`)));
+  const count = h('input', { type: 'number', min: 1, max: 200, value: 1, style: 'width:90px' });
+  const uses = h('input', { type: 'number', min: 1, max: 10000, value: 1, style: 'width:90px' });
+  const valid = h('select', {}, h('option', { value: '' }, 'bez terminu'), [7, 30, 90, 365].map((d) => h('option', { value: d, selected: d === 90 }, `ważny ${d} dni`)));
+  const noteIn = h('input', { maxlength: 120, placeholder: 'notatka, np. „pilotaż — Kowalski”', style: 'flex:1;min-width:200px' });
+  const custom = h('input', { maxlength: 16, placeholder: 'własny kod (opcjonalnie), np. START30', style: 'width:260px;text-transform:uppercase' });
+  const out = h('div', {});
+  const listBox = h('div', {}, h('p', { class: 'muted' }, 'Ładowanie…'));
+
+  const loadList = async () => {
+    const list = await rpc('admin_access_codes', { p_limit: 300 });
+    listBox.replaceChildren(list.length
+      ? h('div', { class: 'card tablewrap', style: 'padding:0' }, h('table', {},
+        h('thead', {}, h('tr', {}, ['Kod', 'Dni', 'Użycia', 'Ważny do', 'Notatka', 'Utworzony', ''].map((t) => h('th', {}, t)))),
+        h('tbody', {}, list.map((c) => {
+          const usedUp = c.used >= c.max_uses || (c.expires_at && new Date(c.expires_at) < new Date());
+          return h('tr', {},
+            h('td', { class: 'mono', style: 'font-weight:700' }, c.code),
+            h('td', {}, c.days),
+            h('td', {}, `${c.used} / ${c.max_uses}`, usedUp ? ' ' : '', usedUp ? badge('nieaktywny') : null),
+            h('td', { class: 'small' }, c.expires_at ? fmtDay(c.expires_at) : 'bez terminu'),
+            h('td', { class: 'small' }, c.note),
+            h('td', { class: 'small' }, fmtDay(c.created_at)),
+            h('td', {}, runBtn('Usuń', 'danger', async () => {
+              if (!confirm(`Usunąć kod ${c.code}? Kto już go użył, zachowuje dostęp.`)) return null;
+              await rpc('admin_delete_access_code', { p_code: c.code });
+              await loadList();
+              return null;
+            }, out)));
+        }))))
+      : h('div', { class: 'card empty' }, 'Nie ma jeszcze kodów.'));
+  };
+
+  render(
+    h('h1', {}, 'Kody dostępu'),
+    h('p', { class: 'muted' }, 'Kod przedłuża dostęp do panelu trenera o podaną liczbę dni (doliczane po okresie próbnym). Trener wpisuje go w aplikacji: ekran dostępu albo Ustawienia → „Mam kod dostępu”. Uwaga: w wersji z App Store darmowe miesiące dawaj przez kody promocyjne Apple — własne kody są do pilotażu i TestFlight.'),
+    h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:10px' },
+      h('div', { class: 'row' }, h('span', {}, 'Dostęp na'), days, h('span', {}, 'liczba kodów'), count, h('span', {}, 'użyć każdego'), uses, valid),
+      h('div', { class: 'row' }, custom, noteIn),
+      h('div', { class: 'actions' }, runBtn('Utwórz', 'primary', async () => {
+        const codes = await rpc('admin_create_access_codes', {
+          p_days: Number(days.value), p_count: Number(count.value) || 1, p_max_uses: Number(uses.value) || 1,
+          p_valid_days: valid.value ? Number(valid.value) : null, p_note: noteIn.value, p_code: custom.value.trim() || null,
+        });
+        await loadList();
+        const text = codes.join('\n');
+        return h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:8px;background:var(--blue-soft);border-color:#C9D9EF' },
+          h('div', { class: 'small' }, `Nowe kody (${codes.length}) — ${days.value} dni dostępu:`),
+          h('pre', { class: 'mono', style: 'margin:0;font-size:18px;font-weight:700;white-space:pre-wrap' }, text),
+          runBtn('Kopiuj', '', async () => { await navigator.clipboard.writeText(text); return 'Skopiowano.'; }, null));
+      }, out)),
+      out),
+    h('h2', {}, 'Wszystkie kody'),
+    listBox);
+  await loadList();
 }
 
 // ---------- Dziennik ----------
@@ -445,7 +581,7 @@ async function dziennik() {
 }
 
 // ---------- Nawigacja ----------
-const TABS = { pulpit, konta, kluby, dziennik };
+const TABS = { pulpit, konta, kluby, dostep, dziennik };
 function showErr(e) { app.prepend(note(e.message || String(e), 'err')); }
 async function route() {
   const tab = (location.hash.slice(1) || 'pulpit');
