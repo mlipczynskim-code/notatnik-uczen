@@ -9,11 +9,11 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(
 [hidden] { display: none !important; }
 header { background: var(--ink); color: #fff; position: sticky; top: 0; z-index: 5; }
 .bar { max-width: 1240px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.brand { font-weight: 800; font-size: 18px; letter-spacing: -.2px; white-space: nowrap; }
+.brand { font-weight: 800; font-size: 17px; letter-spacing: -.2px; white-space: nowrap; }
 .brand small { color: #F9B48F; font-weight: 700; font-size: 12px; letter-spacing: .8px; margin-left: 8px; }
-header select { background: #2A2D33; color: #fff; border-color: #3A3E46; max-width: 220px; }
+header select { background: #2A2D33; color: #fff; border-color: #3A3E46; max-width: 180px; }
 nav { display: flex; gap: 2px; flex: 1; flex-wrap: wrap; }
-nav a { color: #C9CCD2; text-decoration: none; padding: 8px 10px; border-radius: 10px; font-weight: 600; }
+nav a { color: #C9CCD2; text-decoration: none; padding: 8px 9px; border-radius: 10px; font-weight: 600; }
 nav a.on { background: #2A2D33; color: #fff; }
 nav a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #F9B48F; outline-offset: 1px; }
 .who { color: #C9CCD2; font-size: 13px; display: flex; align-items: center; gap: 10px; }

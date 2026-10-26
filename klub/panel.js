@@ -48,7 +48,7 @@ function s(tag, attrs) {
 }
 const badge = (text, tone) => h('span', { class: 'badge' + (tone ? ' ' + tone : '') }, text);
 const note = (text, tone) => h('div', { class: 'note ' + (tone || 'info') }, text);
-const render = (...nodes) => app.replaceChildren(...nodes);
+const render = (...nodes) => app.replaceChildren(...nodes.filter((n) => n !== null && n !== undefined && n !== false));
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 const pad = (n) => String(n).padStart(2, '0');
 const zl = (n) => `${Number(n || 0).toLocaleString('pl-PL')} zł`;
@@ -1014,6 +1014,74 @@ function groupDialog(g, kind, members) {
   name.focus();
 }
 
+// ---------- Wiadomości do uczniów (aplikacja ucznia + powiadomienie) ----------
+async function wiadomosci() {
+  render(h('h1', {}, 'Wiadomości'), h('p', { class: 'muted' }, 'Ładowanie…'));
+  await getCore();
+  let list = [];
+  let err = null;
+  try { list = await rpc('sent_messages', { p_limit: 100 }); } catch (e) { err = e.message; }
+  const fmtFull = (iso) => new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  render(
+    h('div', { class: 'row' }, h('h1', {}, 'Wiadomości'), h('span', { class: 'spacer' }),
+      h('button', { type: 'button', class: 'primary', onclick: () => composeDialog() }, '+ Nowa wiadomość')),
+    h('p', { class: 'muted', style: 'margin:0' }, 'Uczniowie z aplikacją widzą wiadomość w zakładce „Wiadomości” i dostają powiadomienie. Do pozostałych napisz przez WhatsApp lub SMS.'),
+    err ? note(/014|send_message|sent_messages/.test(err) || /function/.test(err) ? 'Serwer nie ma jeszcze wiadomości — trzeba uruchomić migrację 014 w Supabase.' : err, 'err') : null,
+    list.length ? table(['Kiedy', 'Do', 'Treść', ['Przeczytało', 'num'], ''],
+      list.map((m) => h('tr', {},
+        td(fmtFull(m.created_at), 'small'),
+        td(badge(m.target_label, m.scope === 'all' ? 'dark' : '')),
+        td(h('div', {}, m.title ? h('div', { style: 'font-weight:700' }, m.title) : null, h('div', { class: 'small', style: 'white-space:pre-wrap' }, m.body), !m.mine && m.author_name ? h('div', { class: 'muted small' }, `od: ${m.author_name}`) : null)),
+        td(`${m.read} / ${m.with_app}` + (m.recipients > m.with_app ? ` (+${m.recipients - m.with_app} bez aplikacji)` : ''), 'num'),
+        td(runBtn('Wycofaj', 'link', async () => {
+          if (!confirm('Wycofać wiadomość? Zniknie z aplikacji uczniów.')) return null;
+          await rpc('delete_message', { p_id: m.id });
+          await wiadomosci();
+          return null;
+        })))))
+      : !err ? h('div', { class: 'card empty' }, 'Jeszcze nic nie wysłano.') : null);
+}
+
+function composeDialog() {
+  const scopes = [['group', 'Grupa'], ['student', 'Uczeń']].concat(isAdmin() ? [['all', 'Wszyscy uczniowie']] : []);
+  const scope = select(scopes, 'group');
+  const group = select(activeGroups().map((g) => [g.id, g.name]), (activeGroups()[0] || {}).id);
+  const picker = studentPicker(null);
+  const title = h('input', { maxlength: 80, placeholder: 'np. Trening odwołany' });
+  const body = h('textarea', { maxlength: 1000, placeholder: 'Treść wiadomości' });
+  const fGroup = field('Grupa', group);
+  const fStudent = field('Uczeń', picker.el);
+  const sync = () => { fGroup.hidden = scope.value !== 'group'; fStudent.hidden = scope.value !== 'student'; };
+  scope.addEventListener('change', sync);
+  sync();
+  const out = h('div', {});
+  openDialog(dlgHead('Nowa wiadomość', 'Nie wpisuj informacji o zdrowiu — wiadomości są zapisywane na serwerze.'),
+    h('div', { class: 'form' }, field('Do', scope), fGroup, fStudent, field('Temat (opcjonalnie)', title)),
+    field('Treść', body),
+    h('div', { class: 'row' }, runBtn('Wyślij', 'primary', async () => {
+      if (!body.value.trim()) throw new Error('Wpisz treść.');
+      const sid = scope.value === 'student' ? picker.id : null;
+      if (scope.value === 'student' && !sid) throw new Error('Wybierz ucznia z listy podpowiedzi.');
+      const r = await rpc('send_message', {
+        p_scope: scope.value, p_group_id: scope.value === 'group' ? group.value : null, p_student_id: sid,
+        p_title: title.value.trim(), p_body: body.value.trim(),
+      });
+      let pushed = '';
+      if (r.with_app > 0) {
+        try {
+          const { data } = await sb.functions.invoke('push', { body: { message_id: r.id } });
+          if (data && data.configured) pushed = ` Powiadomienie na telefon: ${data.sent}.`;
+        } catch (_) { /* bez funkcji push wiadomość i tak jest w aplikacji */ }
+      }
+      dlg.close();
+      await wiadomosci();
+      const without = r.recipients - r.with_app;
+      app.prepend(note(`Wysłano. W aplikacji: ${r.with_app}.${pushed}${without ? ` Bez aplikacji: ${without} — napisz do nich przez WhatsApp lub SMS.` : ''}`, 'ok'));
+      return null;
+    }, out)), out);
+  body.focus();
+}
+
 // ---------- Trenerzy (admin klubu) ----------
 async function trenerzy() {
   if (!space.club) {
@@ -1062,7 +1130,7 @@ async function trenerzy() {
 }
 
 // ---------- Nawigacja i przestrzenie ----------
-const TABS = { pulpit, recepcja, klienci, wplaty, grupy, trenerzy, raport };
+const TABS = { pulpit, recepcja, klienci, wplaty, wiadomosci, grupy, trenerzy, raport };
 async function route() {
   if (!me || !space) return;
   let tab = location.hash.slice(1) || 'pulpit';
